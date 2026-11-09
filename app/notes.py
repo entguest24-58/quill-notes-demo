@@ -43,8 +43,8 @@ def list_notes(q: Optional[str] = Query(default=None, max_length=100), pinned: O
         sql += " AND pinned = ?"
         args.append(1 if pinned else 0)
     if q:
-        sql += " AND title LIKE ?"
-        args.append(f"%{q}%")
+        sql += " AND (title LIKE ? OR body LIKE ?)"
+        args += [f"%{q}%", f"%{q}%"]
     sql += " ORDER BY pinned DESC, created_at DESC, id DESC"
     with connect() as conn:
         return [_out(r) for r in conn.execute(sql, args).fetchall()]
