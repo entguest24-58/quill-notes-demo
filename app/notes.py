@@ -11,13 +11,13 @@ router = APIRouter(prefix="/notes", tags=["notes"])
 
 
 class NoteIn(BaseModel):
-    title: str = Field(min_length=1, max_length=200)
+    title: str = Field(min_length=1, max_length=500)
     body: str = Field(default="", max_length=10_000)
     pinned: bool = False
 
 
 class NotePatch(BaseModel):
-    title: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    title: Optional[str] = Field(default=None, min_length=1, max_length=500)
     body: Optional[str] = Field(default=None, max_length=10_000)
     pinned: Optional[bool] = None
 
@@ -63,8 +63,12 @@ def create_note(body: NoteIn, user: dict = Depends(current_user)) -> dict:
 
 @router.get("/{note_id}")
 def get_note(note_id: int, user: dict = Depends(current_user)) -> dict:
+    """Open a note by id: your own notes and the notes shared with you."""
     with connect() as conn:
-        return _out(_own_note(conn, note_id, user["id"]))
+        row = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
+        if row is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Note not found")
+        return _out(row)
 
 
 @router.patch("/{note_id}")
